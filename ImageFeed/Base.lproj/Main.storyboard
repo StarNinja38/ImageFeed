@@ -87,15 +87,84 @@
                     </view>
                     <connections>
                         <outlet property="tableView" destination="tbl-01-img" id="otv-01-img"/>
+                        <segue destination="vc0-02-sng" kind="presentation" identifier="ShowSingleImage" modalPresentationStyle="fullScreen" id="seg-vc-01"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="frp-01-img" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="53" y="52"/>
         </scene>
+        <!--Single Image View Controller-->
+        <scene sceneID="scn-02-sng">
+            <objects>
+                <viewController id="vc0-02-sng" customClass="SingleImageViewController" customModule="ImageFeed" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="viw-02-sng">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="scr-02-sng">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="img-02-sng">
+                                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                    </imageView>
+                                </subviews>
+                                <color key="backgroundColor" name="YP Black"/>
+                                <connections>
+                                    <outlet property="delegate" destination="vc0-02-sng" id="scr-dg-02"/>
+                                </connections>
+                            </scrollView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="btn-back-02">
+                                <rect key="frame" x="9" y="59" width="44" height="44"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="44" id="bb-w-02"/>
+                                    <constraint firstAttribute="height" constant="44" id="bb-h-02"/>
+                                </constraints>
+                                <state key="normal" image="nav_back_button_white"/>
+                                <connections>
+                                    <action selector="didTapBackButton" destination="vc0-02-sng" eventType="touchUpInside" id="bb-a-02"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="btn-share-02">
+                                <rect key="frame" x="171" y="741" width="51" height="51"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="51" id="bs-w-02"/>
+                                    <constraint firstAttribute="height" constant="51" id="bs-h-02"/>
+                                </constraints>
+                                <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <state key="normal" image="square.and.arrow.up" catalog="system"/>
+                                <connections>
+                                    <action selector="didTapShareButton" destination="vc0-02-sng" eventType="touchUpInside" id="bs-a-02"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="saf-02-sng"/>
+                        <color key="backgroundColor" name="YP Black"/>
+                        <constraints>
+                            <constraint firstItem="scr-02-sng" firstAttribute="top" secondItem="viw-02-sng" secondAttribute="top" id="sc-t-02"/>
+                            <constraint firstItem="scr-02-sng" firstAttribute="leading" secondItem="viw-02-sng" secondAttribute="leading" id="sc-l-02"/>
+                            <constraint firstAttribute="trailing" secondItem="scr-02-sng" secondAttribute="trailing" id="sc-r-02"/>
+                            <constraint firstAttribute="bottom" secondItem="scr-02-sng" secondAttribute="bottom" id="sc-b-02"/>
+                            <constraint firstItem="btn-back-02" firstAttribute="leading" secondItem="saf-02-sng" secondAttribute="leading" constant="9" id="bb-l-02"/>
+                            <constraint firstItem="btn-back-02" firstAttribute="top" secondItem="saf-02-sng" secondAttribute="top" constant="11" id="bb-t-02"/>
+                            <constraint firstItem="btn-share-02" firstAttribute="centerX" secondItem="viw-02-sng" secondAttribute="centerX" id="bs-cx-02"/>
+                            <constraint firstItem="saf-02-sng" firstAttribute="bottom" secondItem="btn-share-02" secondAttribute="bottom" constant="17" id="bs-b-02"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="imageView" destination="img-02-sng" id="o-img-02"/>
+                        <outlet property="scrollView" destination="scr-02-sng" id="o-scr-02"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="frp-02-sng" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="700" y="52"/>
+        </scene>
     </scenes>
     <resources>
         <image name="like_button_off" width="44" height="44"/>
+        <image name="nav_back_button_white" width="44" height="44"/>
+        <image name="square.and.arrow.up" catalog="system" width="128" height="128"/>
         <namedColor name="YP Black">
             <color red="0.10196078431372549" green="0.10588235294117647" blue="0.13333333333333333" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
