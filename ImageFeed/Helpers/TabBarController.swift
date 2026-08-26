@@ -7,13 +7,7 @@ final class TabBarController: UITabBarController {
     override func awakeFromNib() {
         super.awakeFromNib()
 
-        let storyboard = UIStoryboard(name: "Main", bundle: .main)
-        guard let imagesListViewController = storyboard.instantiateViewController(
-            withIdentifier: "ImagesListViewController"
-        ) as? ImagesListViewController else {
-            print("[TabBarController.awakeFromNib]: не удалось создать ImagesListViewController")
-            return
-        }
+        let imagesListViewController = ImagesListViewController()
 
         let profileViewController = ProfileViewController()
 
