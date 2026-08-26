@@ -14,11 +14,15 @@ final class OAuth2Service {
     static let shared = OAuth2Service()
     private init() {}
 
+    private enum HTTPStatus {
+        static let successRange = 200..<300
+    }
+
     private let tokenStorage = OAuth2TokenStorage()
 
     func fetchAuthToken(
         code: String,
-        completion: @escaping (Swift.Result<String, Error>) -> Void
+        completion: @escaping (Result<String, Error>) -> Void
     ) {
         guard let request = makeTokenRequest(code: code) else {
             print("[OAuth2Service.fetchAuthToken]: не удалось собрать URLRequest для code")
@@ -42,7 +46,7 @@ final class OAuth2Service {
             }
 
             let statusCode = httpResponse.statusCode
-            guard (200..<300).contains(statusCode) else {
+            guard HTTPStatus.successRange.contains(statusCode) else {
                 print("[OAuth2Service.fetchAuthToken]: сервис Unsplash вернул код \(statusCode)")
                 self.completeOnMainThread(completion, .failure(AuthServiceError.httpStatusCode(statusCode)))
                 return
@@ -91,8 +95,8 @@ final class OAuth2Service {
     }
 
     private func completeOnMainThread(
-        _ completion: @escaping (Swift.Result<String, Error>) -> Void,
-        _ result: Swift.Result<String, Error>
+        _ completion: @escaping (Result<String, Error>) -> Void,
+        _ result: Result<String, Error>
     ) {
         DispatchQueue.main.async {
             completion(result)

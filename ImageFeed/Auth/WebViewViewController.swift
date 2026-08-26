@@ -1,12 +1,27 @@
 import UIKit
 @preconcurrency import WebKit
 
+// MARK: - WebViewViewControllerDelegate
+
 protocol WebViewViewControllerDelegate: AnyObject {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String)
     func webViewViewControllerDidCancel(_ vc: WebViewViewController)
 }
 
+// MARK: - WebViewViewController
+
 final class WebViewViewController: UIViewController {
+
+    private enum Layout {
+        static let backButtonInset: CGFloat = 9
+        static let backButtonSize: CGFloat = 24
+        static let progressTopInset: CGFloat = 9
+    }
+
+    private enum Progress {
+        static let complete: Double = 1.0
+        static let epsilon: Double = 0.0001
+    }
 
     weak var delegate: WebViewViewControllerDelegate?
 
@@ -47,10 +62,10 @@ final class WebViewViewController: UIViewController {
         backButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backButton)
         NSLayoutConstraint.activate([
-            backButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 9),
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 9),
-            backButton.widthAnchor.constraint(equalToConstant: 24),
-            backButton.heightAnchor.constraint(equalToConstant: 24)
+            backButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Layout.backButtonInset),
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Layout.backButtonInset),
+            backButton.widthAnchor.constraint(equalToConstant: Layout.backButtonSize),
+            backButton.heightAnchor.constraint(equalToConstant: Layout.backButtonSize)
         ])
     }
 
@@ -60,7 +75,7 @@ final class WebViewViewController: UIViewController {
         progressView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(progressView)
         NSLayoutConstraint.activate([
-            progressView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 9),
+            progressView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: Layout.progressTopInset),
             progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
@@ -81,7 +96,7 @@ final class WebViewViewController: UIViewController {
     private func updateProgress() {
         let progress = Float(webView.estimatedProgress)
         progressView.setProgress(progress, animated: true)
-        progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
+        progressView.isHidden = abs(webView.estimatedProgress - Progress.complete) <= Progress.epsilon
     }
 
     // MARK: - Загрузка страницы авторизации
