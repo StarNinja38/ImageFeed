@@ -1,23 +1,34 @@
 import Foundation
+import SwiftKeychainWrapper
 
+// MARK: - OAuth2TokenStorage
+
+/// Хранит Bearer Token в Keychain (раньше был UserDefaults — небезопасно для чувствительных данных).
 final class OAuth2TokenStorage {
 
-    private enum Keys: String {
-        case bearerToken
+    private enum Keys {
+        static let bearerToken = "BearerToken"
     }
 
-    private let storage = UserDefaults.standard
+    private let keychain = KeychainWrapper.standard
 
     var token: String? {
         get {
-            storage.string(forKey: Keys.bearerToken.rawValue)
+            keychain.string(forKey: Keys.bearerToken)
         }
         set {
-            if let newValue {
-                storage.set(newValue, forKey: Keys.bearerToken.rawValue)
-            } else {
-                storage.removeObject(forKey: Keys.bearerToken.rawValue)
+            guard let newValue else {
+                keychain.removeObject(forKey: Keys.bearerToken)
+                return
+            }
+            let isSuccess = keychain.set(newValue, forKey: Keys.bearerToken)
+            if !isSuccess {
+                print("[OAuth2TokenStorage.token]: не удалось сохранить токен в Keychain")
             }
         }
+    }
+
+    func clearToken() {
+        keychain.removeObject(forKey: Keys.bearerToken)
     }
 }

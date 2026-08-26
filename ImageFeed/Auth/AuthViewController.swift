@@ -62,15 +62,22 @@ final class AuthViewController: UIViewController {
 
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
+        // Сразу после закрытия WebView показываем индикатор и блокируем UI,
+        // чтобы нельзя было повторно открыть экран авторизации.
+        UIBlockingProgressHUD.show()
+
         vc.dismiss(animated: true) { [weak self] in
             guard let self else { return }
-            self.oauth2Service.fetchAuthToken(code: code) { [weak self] result in
+            self.oauth2Service.fetchOAuthToken(code: code) { [weak self] result in
+                UIBlockingProgressHUD.dismiss()
                 guard let self else { return }
+
                 switch result {
                 case .success:
                     self.delegate?.didAuthenticate(self)
                 case .failure(let error):
-                    print("[AuthViewController.webViewViewController]: не удалось получить токен — \(error.localizedDescription)")
+                    print("[AuthViewController.webViewViewController]: \(error) - code: \(code)")
+                    self.showAuthErrorAlert()
                 }
             }
         }
@@ -78,5 +85,15 @@ extension AuthViewController: WebViewViewControllerDelegate {
 
     func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
         vc.dismiss(animated: true)
+    }
+
+    private func showAuthErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
     }
 }

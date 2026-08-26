@@ -177,6 +177,20 @@
             </objects>
             <point key="canvasLocation" x="1399" y="94"/>
         </scene>
+        <!--Tab Bar Controller-->
+        <scene sceneID="tab-01-scn">
+            <objects>
+                <tabBarController storyboardIdentifier="TabBarViewController" id="tab-01-vc" customClass="TabBarController" customModule="ImageFeed" customModuleProvider="target" sceneMemberID="viewController">
+                    <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="tab-01-bar">
+                        <rect key="frame" x="0.0" y="803" width="393" height="49"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <color key="backgroundColor" name="YP Black"/>
+                    </tabBar>
+                </tabBarController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="tab-01-fr" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1350" y="600"/>
+        </scene>
     </scenes>
     <resources>
         <image name="like_button_off" width="42" height="42"/>
