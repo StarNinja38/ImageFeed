@@ -23,7 +23,20 @@ final class TabBarController: UITabBarController {
         )
 
         viewControllers = [imagesListViewController, profileViewController]
-        tabBar.barTintColor = UIColor(named: "YP Black")
+        setupTabBarAppearance()
+    }
+
+    /// С iOS 15 `barTintColor` игнорируется — фон задаётся через `UITabBarAppearance`,
+    /// иначе панель остаётся светлой и белые иконки на ней не видны.
+    private func setupTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(named: "YP Black")
+        appearance.shadowColor = .clear
+
+        tabBar.standardAppearance = appearance
+        tabBar.scrollEdgeAppearance = appearance
         tabBar.tintColor = .white
+        tabBar.unselectedItemTintColor = .white
     }
 }

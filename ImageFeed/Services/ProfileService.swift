@@ -36,6 +36,12 @@ final class ProfileService {
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<ProfileResult, Error>) in
             guard let self else { return }
 
+            // Ответ устаревшего запроса игнорируем — иначе он затрёт состояние актуального.
+            guard self.lastToken == token else { return }
+
+            self.task = nil
+            self.lastToken = nil
+
             switch result {
             case .success(let profileResult):
                 let profile = Profile(result: profileResult)
@@ -45,9 +51,6 @@ final class ProfileService {
                 print("[ProfileService.fetchProfile]: \(error)")
                 completion(.failure(error))
             }
-
-            self.task = nil
-            self.lastToken = nil
         }
 
         self.task = task

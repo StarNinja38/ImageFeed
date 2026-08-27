@@ -44,6 +44,13 @@ final class OAuth2Service {
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
             guard let self else { return }
 
+            // Пока запрос летел, мог стартовать новый — с другим кодом.
+            // Тогда этот ответ уже неактуален: не трогаем ни состояние, ни completion нового запроса.
+            guard self.lastCode == code else { return }
+
+            self.task = nil
+            self.lastCode = nil
+
             switch result {
             case .success(let responseBody):
                 self.tokenStorage.token = responseBody.accessToken
@@ -52,9 +59,6 @@ final class OAuth2Service {
                 print("[OAuth2Service.fetchOAuthToken]: \(error) - code: \(code)")
                 completion(.failure(error))
             }
-
-            self.task = nil
-            self.lastCode = nil
         }
 
         self.task = task

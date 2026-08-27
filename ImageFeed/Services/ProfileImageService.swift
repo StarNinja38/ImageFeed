@@ -39,13 +39,17 @@ final class ProfileImageService {
         let task = urlSession.objectTask(for: request) { [weak self] (result: Result<UserResult, Error>) in
             guard let self else { return }
 
+            // Ответ устаревшего запроса игнорируем.
+            guard self.lastUsername == username else { return }
+
+            self.task = nil
+            self.lastUsername = nil
+
             switch result {
             case .success(let userResult):
                 guard let imageURL = userResult.profileImage?.large ?? userResult.profileImage?.medium else {
                     print("[ProfileImageService.fetchProfileImageURL]: NetworkError.urlSessionError - в ответе нет profile_image, username: \(username)")
                     completion(.failure(NetworkError.urlSessionError))
-                    self.task = nil
-                    self.lastUsername = nil
                     return
                 }
                 self.avatarURL = imageURL
@@ -59,9 +63,6 @@ final class ProfileImageService {
                 print("[ProfileImageService.fetchProfileImageURL]: \(error) - username: \(username)")
                 completion(.failure(error))
             }
-
-            self.task = nil
-            self.lastUsername = nil
         }
 
         self.task = task
