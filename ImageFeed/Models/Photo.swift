@@ -75,8 +75,8 @@ extension ISO8601DateFormatter {
 extension DateFormatter {
     static let feedDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
+        // Точный формат по ТЗ: «27 августа 2022» — без «г.», который добавляет .long
+        formatter.dateFormat = "d MMMM yyyy"
         formatter.locale = Locale(identifier: "ru_RU")
         return formatter
     }()
