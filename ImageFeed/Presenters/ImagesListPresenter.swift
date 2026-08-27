@@ -34,10 +34,10 @@ final class ImagesListPresenter: ImagesListPresenterProtocol {
 
     private(set) var photos: [Photo] = []
 
-    private let imagesListService: ImagesListService
+    private let imagesListService: ImagesListServiceProtocol
     private var imagesListServiceObserver: NSObjectProtocol?
 
-    init(imagesListService: ImagesListService = .shared) {
+    init(imagesListService: ImagesListServiceProtocol = ImagesListService.shared) {
         self.imagesListService = imagesListService
     }
 
@@ -94,7 +94,9 @@ final class ImagesListPresenter: ImagesListPresenterProtocol {
         imagesListServiceObserver = NotificationCenter.default.addObserver(
             forName: ImagesListService.didChangeNotification,
             object: nil,
-            queue: .main
+            // nil — обработчик выполняется синхронно на потоке отправителя;
+            // сервисы шлют уведомление уже с главного потока.
+            queue: nil
         ) { [weak self] _ in
             guard let self else { return }
             let oldCount = self.photos.count

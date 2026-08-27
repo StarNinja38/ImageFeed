@@ -24,15 +24,15 @@ final class ProfilePresenter: ProfilePresenterProtocol {
 
     weak var view: ProfileViewControllerProtocol?
 
-    private let profileService: ProfileService
-    private let profileImageService: ProfileImageService
-    private let logoutService: ProfileLogoutService
+    private let profileService: ProfileServiceProtocol
+    private let profileImageService: ProfileImageServiceProtocol
+    private let logoutService: ProfileLogoutServiceProtocol
     private var profileImageServiceObserver: NSObjectProtocol?
 
     init(
-        profileService: ProfileService = .shared,
-        profileImageService: ProfileImageService = .shared,
-        logoutService: ProfileLogoutService = .shared
+        profileService: ProfileServiceProtocol = ProfileService.shared,
+        profileImageService: ProfileImageServiceProtocol = ProfileImageService.shared,
+        logoutService: ProfileLogoutServiceProtocol = ProfileLogoutService.shared
     ) {
         self.profileService = profileService
         self.profileImageService = profileImageService
@@ -77,7 +77,9 @@ final class ProfilePresenter: ProfilePresenterProtocol {
         profileImageServiceObserver = NotificationCenter.default.addObserver(
             forName: ProfileImageService.didChangeNotification,
             object: nil,
-            queue: .main
+            // nil — обработчик выполняется синхронно на потоке отправителя;
+            // сервисы шлют уведомление уже с главного потока.
+            queue: nil
         ) { [weak self] _ in
             guard let self else { return }
             self.showAvatar()
