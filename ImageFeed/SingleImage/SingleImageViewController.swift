@@ -1,4 +1,6 @@
 import UIKit
+import Kingfisher
+import ProgressHUD
 
 // MARK: - SingleImageViewController
 
@@ -15,6 +17,9 @@ final class SingleImageViewController: UIViewController {
         static let minimum: CGFloat = 0.1
         static let maximum: CGFloat = 1.25
     }
+
+    /// Ссылка на полноразмерную версию — грузим через Kingfisher.
+    var imageURL: URL?
 
     var image: UIImage? {
         didSet {
@@ -41,10 +46,50 @@ final class SingleImageViewController: UIViewController {
         scrollView.minimumZoomScale = Zoom.minimum
         scrollView.maximumZoomScale = Zoom.maximum
 
+        if imageURL != nil {
+            loadFullImage()
+            return
+        }
+
         guard let image else { return }
         imageView.image = image
         imageView.frame.size = image.size
         rescaleAndCenterImageInScrollView(image: image)
+    }
+
+    // MARK: Загрузка полноразмерного фото
+
+    private func loadFullImage() {
+        guard let imageURL else { return }
+
+        UIBlockingProgressHUD.show()
+        imageView.kf.setImage(with: imageURL) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            guard let self else { return }
+
+            switch result {
+            case .success(let value):
+                self.image = value.image
+                self.imageView.frame.size = value.image.size
+                self.rescaleAndCenterImageInScrollView(image: value.image)
+            case .failure(let error):
+                print("[SingleImageViewController.loadFullImage]: \(error) - url: \(imageURL.absoluteString)")
+                self.showLoadErrorAlert()
+            }
+        }
+    }
+
+    private func showLoadErrorAlert() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Попробовать ещё раз?",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Не надо", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+            self?.loadFullImage()
+        })
+        present(alert, animated: true)
     }
 
     // MARK: Вёрстка кодом

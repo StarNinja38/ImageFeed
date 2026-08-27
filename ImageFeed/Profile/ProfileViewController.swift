@@ -98,6 +98,7 @@ final class ProfileViewController: UIViewController {
         logoutButton.setImage(UIImage(named: "logout_button"), for: .normal)
         logoutButton.tintColor = UIColor(red: 0.96, green: 0.42, blue: 0.42, alpha: 1)
         logoutButton.addTarget(self, action: #selector(didTapLogoutButton), for: .touchUpInside)
+        logoutButton.accessibilityIdentifier = "logout button"
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(logoutButton)
         NSLayoutConstraint.activate([
@@ -145,7 +146,32 @@ final class ProfileViewController: UIViewController {
         ])
     }
 
+    // MARK: Выход из аккаунта
+
     @objc private func didTapLogoutButton() {
-        // выход — реализуем в следующих спринтах
+        let alert = UIAlertController(
+            title: "Пока, пока!",
+            message: "Уверены, что хотите выйти?",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Да", style: .default) { [weak self] _ in
+            self?.performLogout()
+        })
+        alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
+        alert.view.accessibilityIdentifier = "Bye bye!"
+        present(alert, animated: true)
+    }
+
+    private func performLogout() {
+        ProfileLogoutService.shared.logout()
+
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }) else {
+            print("[ProfileViewController.performLogout]: не удалось получить keyWindow")
+            return
+        }
+        window.rootViewController = SplashViewController()
     }
 }
