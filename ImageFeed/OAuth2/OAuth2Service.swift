@@ -1,72 +1,67 @@
 import Foundation
 
 enum AuthServiceError: Error {
-    case invalidURLComponents
-    case invalidURL
-    case httpStatusCode(Int)
-    case urlRequestError(Error)
-    case urlSessionError
-    case decodingError(Error)
+    case invalidRequest
 }
+
+// MARK: - OAuth2Service
 
 final class OAuth2Service {
 
     static let shared = OAuth2Service()
     private init() {}
 
-    private enum HTTPStatus {
-        static let successRange = 200..<300
-    }
-
+    private let urlSession = URLSession.shared
     private let tokenStorage = OAuth2TokenStorage()
 
-    func fetchAuthToken(
+    /// Текущий запрос и код, с которым он ушёл, — защита от гонки.
+    private var task: URLSessionTask?
+    private var lastCode: String?
+
+    func fetchOAuthToken(
         code: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        guard let request = makeTokenRequest(code: code) else {
-            print("[OAuth2Service.fetchAuthToken]: не удалось собрать URLRequest для code")
-            completeOnMainThread(completion, .failure(AuthServiceError.invalidURL))
+        assert(Thread.isMainThread)
+
+        // Тот же код и запрос ещё в полёте — второй вызов не нужен.
+        if lastCode == code {
+            print("[OAuth2Service.fetchOAuthToken]: AuthServiceError.invalidRequest - повторный вызов с тем же code")
+            completion(.failure(AuthServiceError.invalidRequest))
             return
         }
 
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        // Код другой — прошлый запрос уже неактуален, отменяем.
+        task?.cancel()
+        lastCode = code
+
+        guard let request = makeTokenRequest(code: code) else {
+            print("[OAuth2Service.fetchOAuthToken]: AuthServiceError.invalidRequest - не удалось собрать URLRequest, code: \(code)")
+            completion(.failure(AuthServiceError.invalidRequest))
+            return
+        }
+
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
             guard let self else { return }
 
-            if let error {
-                print("[OAuth2Service.fetchAuthToken]: сетевая ошибка — \(error.localizedDescription)")
-                self.completeOnMainThread(completion, .failure(AuthServiceError.urlRequestError(error)))
-                return
-            }
+            // Пока запрос летел, мог стартовать новый — с другим кодом.
+            // Тогда этот ответ уже неактуален: не трогаем ни состояние, ни completion нового запроса.
+            guard self.lastCode == code else { return }
 
-            guard let httpResponse = response as? HTTPURLResponse else {
-                print("[OAuth2Service.fetchAuthToken]: ответ не является HTTPURLResponse")
-                self.completeOnMainThread(completion, .failure(AuthServiceError.urlSessionError))
-                return
-            }
+            self.task = nil
+            self.lastCode = nil
 
-            let statusCode = httpResponse.statusCode
-            guard HTTPStatus.successRange.contains(statusCode) else {
-                print("[OAuth2Service.fetchAuthToken]: сервис Unsplash вернул код \(statusCode)")
-                self.completeOnMainThread(completion, .failure(AuthServiceError.httpStatusCode(statusCode)))
-                return
-            }
-
-            guard let data else {
-                print("[OAuth2Service.fetchAuthToken]: пустое тело ответа при коде \(statusCode)")
-                self.completeOnMainThread(completion, .failure(AuthServiceError.urlSessionError))
-                return
-            }
-
-            do {
-                let responseBody = try JSONDecoder().decode(OAuthTokenResponseBody.self, from: data)
+            switch result {
+            case .success(let responseBody):
                 self.tokenStorage.token = responseBody.accessToken
-                self.completeOnMainThread(completion, .success(responseBody.accessToken))
-            } catch {
-                print("[OAuth2Service.fetchAuthToken]: ошибка декодирования OAuthTokenResponseBody — \(error.localizedDescription)")
-                self.completeOnMainThread(completion, .failure(AuthServiceError.decodingError(error)))
+                completion(.success(responseBody.accessToken))
+            case .failure(let error):
+                print("[OAuth2Service.fetchOAuthToken]: \(error) - code: \(code)")
+                completion(.failure(error))
             }
         }
+
+        self.task = task
         task.resume()
     }
 
@@ -92,14 +87,5 @@ final class OAuth2Service {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         return request
-    }
-
-    private func completeOnMainThread(
-        _ completion: @escaping (Result<String, Error>) -> Void,
-        _ result: Result<String, Error>
-    ) {
-        DispatchQueue.main.async {
-            completion(result)
-        }
     }
 }

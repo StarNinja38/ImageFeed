@@ -1,9 +1,14 @@
 import UIKit
 
+// MARK: - SplashViewController
+
 final class SplashViewController: UIViewController {
 
     private let logoImageView = UIImageView()
+
     private let tokenStorage = OAuth2TokenStorage()
+    private let profileService = ProfileService.shared
+    private let profileImageService = ProfileImageService.shared
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -13,12 +18,16 @@ final class SplashViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if tokenStorage.token != nil {
-            switchToTabBarController()
-        } else {
+
+        guard let token = tokenStorage.token else {
             showAuthViewController()
+            return
         }
+        // Токен уже есть — тянем профиль, splash висит до готовности данных.
+        fetchProfile(token)
     }
+
+    // MARK: Вёрстка кодом
 
     private func setupLogo() {
         logoImageView.image = UIImage(named: "splash_screen_logo")
@@ -31,6 +40,8 @@ final class SplashViewController: UIViewController {
         ])
     }
 
+    // MARK: Флоу
+
     private func showAuthViewController() {
         let authViewController = AuthViewController()
         authViewController.delegate = self
@@ -38,37 +49,39 @@ final class SplashViewController: UIViewController {
         present(authViewController, animated: true)
     }
 
+    private func fetchProfile(_ token: String) {
+        UIBlockingProgressHUD.show()
+        profileService.fetchProfile(token) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            guard let self else { return }
+
+            switch result {
+            case .success(let profile):
+                self.profileImageService.fetchProfileImageURL(username: profile.username) { _ in }
+                self.switchToTabBarController()
+            case .failure(let error):
+                print("[SplashViewController.fetchProfile]: \(error)")
+                self.showAuthViewController()
+            }
+        }
+    }
+
     private func switchToTabBarController() {
-        guard let window = view.window else {
-            print("[SplashViewController.switchToTabBarController]: не удалось получить window")
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }) else {
+            print("[SplashViewController.switchToTabBarController]: не удалось получить keyWindow")
             return
         }
 
         let storyboard = UIStoryboard(name: "Main", bundle: .main)
-        guard let imagesListViewController = storyboard.instantiateViewController(
-            withIdentifier: "ImagesListViewController"
-        ) as? ImagesListViewController else {
-            print("[SplashViewController.switchToTabBarController]: не удалось создать ImagesListViewController из Main.storyboard")
+        guard let tabBarController = storyboard.instantiateViewController(
+            withIdentifier: "TabBarViewController"
+        ) as? TabBarController else {
+            print("[SplashViewController.switchToTabBarController]: не удалось создать TabBarController из Main.storyboard")
             return
         }
-
-        let profileViewController = ProfileViewController()
-
-        imagesListViewController.tabBarItem = UITabBarItem(
-            title: nil,
-            image: UIImage(named: "tab_editorial_active"),
-            selectedImage: nil
-        )
-        profileViewController.tabBarItem = UITabBarItem(
-            title: nil,
-            image: UIImage(named: "tab_profile_active"),
-            selectedImage: nil
-        )
-
-        let tabBarController = UITabBarController()
-        tabBarController.viewControllers = [imagesListViewController, profileViewController]
-        tabBarController.tabBar.barTintColor = UIColor(named: "YP Black")
-        tabBarController.tabBar.tintColor = .white
 
         window.rootViewController = tabBarController
     }
@@ -79,8 +92,8 @@ final class SplashViewController: UIViewController {
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
         vc.dismiss(animated: true) { [weak self] in
-            guard let self else { return }
-            self.switchToTabBarController()
+            guard let self, let token = self.tokenStorage.token else { return }
+            self.fetchProfile(token)
         }
     }
 }
