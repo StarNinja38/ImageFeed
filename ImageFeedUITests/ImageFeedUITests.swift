@@ -29,13 +29,13 @@ final class ImageFeedUITests: XCTestCase {
 
         let loginTextField = webView.descendants(matching: .textField).element
         XCTAssertTrue(loginTextField.waitForExistence(timeout: 10))
-        loginTextField.tap()
+        focus(loginTextField)
         loginTextField.typeText(Credentials.email)
         webView.swipeUp()
 
         let passwordTextField = webView.descendants(matching: .secureTextField).element
         XCTAssertTrue(passwordTextField.waitForExistence(timeout: 10))
-        passwordTextField.tap()
+        focus(passwordTextField)
         passwordTextField.typeText(Credentials.password)
         webView.swipeUp()
 
@@ -83,8 +83,31 @@ final class ImageFeedUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts[Credentials.login].exists)
 
         app.buttons["logout button"].tap()
-        app.alerts["Bye bye!"].scrollViews.otherElements.buttons["Да"].tap()
+
+        let alert = app.alerts["Bye bye!"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        alert.buttons["Да"].tap()
 
         XCTAssertTrue(app.buttons["Authenticate"].waitForExistence(timeout: 10))
+    }
+
+    /// WebKit-поля внутри `WKWebView` часто не получают фокус от обычного `tap()`:
+    /// клавиатура может быть уже поднята предыдущим полем, и `typeText` падает с
+    /// «Neither element nor any descendant has keyboard focus».
+    /// Поэтому тапаем по координате поля и проверяем фокус именно у него.
+    private func focus(_ element: XCUIElement, attempts: Int = 5) {
+        for _ in 0..<attempts {
+            if element.hasKeyboardFocus { return }
+            element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            _ = app.keyboards.element.waitForExistence(timeout: 2)
+        }
+        XCTAssertTrue(element.hasKeyboardFocus, "Не удалось поставить курсор в поле")
+    }
+}
+
+private extension XCUIElement {
+    /// У XCUIElement нет публичного флага фокуса — берём его через KVC.
+    var hasKeyboardFocus: Bool {
+        (value(forKey: "hasKeyboardFocus") as? Bool) ?? false
     }
 }
