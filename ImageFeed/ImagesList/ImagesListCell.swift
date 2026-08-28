@@ -1,10 +1,21 @@
 import UIKit
+import Kingfisher
+
+// MARK: - ImagesListCellDelegate
+
+/// Ячейка свёрстана кодом (задача ⭐ Спринта 11), поэтому вместо `@IBAction`
+/// о тапе по лайку сообщаем делегату.
+protocol ImagesListCellDelegate: AnyObject {
+    func imageListCellDidTapLike(_ cell: ImagesListCell)
+}
 
 // MARK: - ImagesListCell
 
 final class ImagesListCell: UITableViewCell {
 
     static let reuseIdentifier = "ImagesListCell"
+
+    weak var delegate: ImagesListCellDelegate?
 
     private enum Layout {
         static let imageSideInset: CGFloat = 16
@@ -18,8 +29,6 @@ final class ImagesListCell: UITableViewCell {
     let cellImage = UIImageView()
     let dateLabel = UILabel()
     let likeButton = UIButton(type: .custom)
-
-    // MARK: Инициализация (вёрстка кодом вместо прототипа в Storyboard)
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -35,11 +44,43 @@ final class ImagesListCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        cellImage.kf.cancelDownloadTask()   // отменяем загрузку прошлой картинки
         cellImage.image = nil
         dateLabel.text = nil
     }
 
-    // MARK: Вёрстка
+    // MARK: Конфигурация
+
+    func configure(with photo: Photo) {
+        let placeholder = UIImage(named: "stub_photo")
+        if let url = URL(string: photo.thumbImageURL) {
+            cellImage.kf.indicatorType = .activity
+            cellImage.kf.setImage(with: url, placeholder: placeholder)
+        } else {
+            cellImage.image = placeholder
+        }
+
+        if let createdAt = photo.createdAt {
+            dateLabel.text = DateFormatter.feedDateFormatter.string(from: createdAt)
+        } else {
+            dateLabel.text = ""   // graceful degradation: дата не распарсилась
+        }
+
+        setIsLiked(photo.isLiked)
+    }
+
+    /// Меняет картинку индикатора лайка.
+    func setIsLiked(_ isLiked: Bool) {
+        let likeImage = isLiked ? UIImage(named: "like_button_on") : UIImage(named: "like_button_off")
+        likeButton.setImage(likeImage, for: .normal)
+        likeButton.accessibilityIdentifier = isLiked ? "like button on" : "like button off"
+    }
+
+    @objc private func didTapLikeButton() {
+        delegate?.imageListCellDidTapLike(self)
+    }
+
+    // MARK: Вёрстка кодом
 
     private func setupCell() {
         backgroundColor = .clear
@@ -63,6 +104,7 @@ final class ImagesListCell: UITableViewCell {
     }
 
     private func setupLikeButton() {
+        likeButton.addTarget(self, action: #selector(didTapLikeButton), for: .touchUpInside)
         likeButton.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(likeButton)
         NSLayoutConstraint.activate([
