@@ -84,7 +84,10 @@ final class ImageFeedUITests: XCTestCase {
 
         app.buttons["logout button"].tap()
 
-        let alert = app.alerts["Bye bye!"]
+        // Идентификатор "Bye bye!" задан у `alert.view`, но всплывает он не на всех
+        // версиях iOS, поэтому берём алерт по идентификатору с откатом на первый видимый.
+        let namedAlert = app.alerts["Bye bye!"]
+        let alert = namedAlert.waitForExistence(timeout: 5) ? namedAlert : app.alerts.firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
         alert.buttons["Да"].tap()
 
