@@ -8,3 +8,6 @@ xcuserdata/
 *.moved-aside
 .DS_Store
 project.yml
+
+# Тестовые артефакты
+*.xcresult

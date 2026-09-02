@@ -3,7 +3,9 @@ import Kingfisher
 
 // MARK: - ProfileViewController
 
-final class ProfileViewController: UIViewController {
+final class ProfileViewController: UIViewController & ProfileViewControllerProtocol {
+
+    var presenter: ProfilePresenterProtocol?
 
     private enum Layout {
         static let avatarSize: CGFloat = 70
@@ -20,8 +22,6 @@ final class ProfileViewController: UIViewController {
     private let descriptionLabel = UILabel()
     private let logoutButton = UIButton()
 
-    private let profileService = ProfileService.shared
-    private var profileImageServiceObserver: NSObjectProtocol?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,41 +33,18 @@ final class ProfileViewController: UIViewController {
         setupLoginNameLabel()
         setupDescriptionLabel()
 
-        updateProfileDetails(profile: profileService.profile)
-        observeAvatarChanges()
-        updateAvatar()
+        presenter?.viewDidLoad()
     }
 
-    // MARK: Данные
+    // MARK: - ProfileViewControllerProtocol
 
-    private func updateProfileDetails(profile: Profile?) {
-        guard let profile else {
-            print("[ProfileViewController.updateProfileDetails]: профиль ещё не загружен")
-            return
-        }
-        nameLabel.text = profile.name
-        loginNameLabel.text = profile.loginName
-        descriptionLabel.text = profile.bio
+    func updateProfileDetails(name: String, loginName: String, bio: String?) {
+        nameLabel.text = name
+        loginNameLabel.text = loginName
+        descriptionLabel.text = bio
     }
 
-    private func observeAvatarChanges() {
-        profileImageServiceObserver = NotificationCenter.default.addObserver(
-            forName: ProfileImageService.didChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            self.updateAvatar()
-        }
-    }
-
-    private func updateAvatar() {
-        guard
-            let urlString = ProfileImageService.shared.avatarURL,
-            let url = URL(string: urlString)
-        else {
-            return
-        }
+    func updateAvatar(url: URL) {
         let processor = RoundCornerImageProcessor(cornerRadius: Layout.avatarCornerRadius)
         avatarImageView.kf.indicatorType = .activity
         avatarImageView.kf.setImage(
@@ -75,6 +52,17 @@ final class ProfileViewController: UIViewController {
             placeholder: UIImage(named: "avatar"),
             options: [.processor(processor), .cacheSerializer(FormatIndicatedCacheSerializer.png)]
         )
+    }
+
+    func switchToSplash() {
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }) else {
+            print("[ProfileViewController.switchToSplash]: не удалось получить keyWindow")
+            return
+        }
+        window.rootViewController = SplashViewController()
     }
 
     // MARK: Вёрстка кодом
@@ -99,6 +87,8 @@ final class ProfileViewController: UIViewController {
         logoutButton.tintColor = UIColor(red: 0.96, green: 0.42, blue: 0.42, alpha: 1)
         logoutButton.addTarget(self, action: #selector(didTapLogoutButton), for: .touchUpInside)
         logoutButton.accessibilityIdentifier = "logout button"
+        nameLabel.accessibilityIdentifier = "Name Lastname"
+        loginNameLabel.accessibilityIdentifier = "@username"
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(logoutButton)
         NSLayoutConstraint.activate([
@@ -149,29 +139,20 @@ final class ProfileViewController: UIViewController {
     // MARK: Выход из аккаунта
 
     @objc private func didTapLogoutButton() {
+        presenter?.didTapLogout()
+    }
+
+    func showLogoutAlert() {
         let alert = UIAlertController(
             title: "Пока, пока!",
             message: "Уверены, что хотите выйти?",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "Да", style: .default) { [weak self] _ in
-            self?.performLogout()
+            self?.presenter?.confirmLogout()
         })
         alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
         alert.view.accessibilityIdentifier = "Bye bye!"
         present(alert, animated: true)
-    }
-
-    private func performLogout() {
-        ProfileLogoutService.shared.logout()
-
-        guard let window = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .flatMap({ $0.windows })
-            .first(where: { $0.isKeyWindow }) else {
-            print("[ProfileViewController.performLogout]: не удалось получить keyWindow")
-            return
-        }
-        window.rootViewController = SplashViewController()
     }
 }

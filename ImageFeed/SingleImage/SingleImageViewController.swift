@@ -113,6 +113,7 @@ final class SingleImageViewController: UIViewController {
     private func setupBackButton() {
         backButton.setImage(UIImage(named: "nav_back_button_white"), for: .normal)
         backButton.addTarget(self, action: #selector(didTapBackButton), for: .touchUpInside)
+        backButton.accessibilityIdentifier = "BackButton"
         backButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(backButton)
         NSLayoutConstraint.activate([

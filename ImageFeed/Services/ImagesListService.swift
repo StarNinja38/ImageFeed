@@ -21,6 +21,10 @@ final class ImagesListService {
     private var task: URLSessionTask?
     private var lastLoadedPage: Int?
 
+    /// Сервер прислал пустую страницу — метаинформация кончилась,
+    /// дальше за ней не ходим (проверяется Breakpoint'ом в Charles Proxy).
+    private(set) var isLastPageLoaded = false
+
     private var likeTask: URLSessionTask?
 
     // MARK: Постраничная загрузка
@@ -31,6 +35,9 @@ final class ImagesListService {
 
         // Пока запрос в полёте, новый не создаём.
         guard task == nil else { return }
+
+        // Крайняя страница уже получена — новых запросов не делаем.
+        guard !isLastPageLoaded else { return }
 
         let nextPage = (lastLoadedPage ?? 0) + 1
 
@@ -45,6 +52,12 @@ final class ImagesListService {
 
             switch result {
             case .success(let photoResults):
+                // Пустая страница = лента закончилась.
+                guard !photoResults.isEmpty else {
+                    self.isLastPageLoaded = true
+                    return
+                }
+
                 // Массив обновляем на главном потоке, новые фото — в конец.
                 let newPhotos = photoResults.map { Photo(from: $0) }
                 self.photos.append(contentsOf: newPhotos)
@@ -103,6 +116,7 @@ final class ImagesListService {
     func clean() {
         photos = []
         lastLoadedPage = nil
+        isLastPageLoaded = false
         task?.cancel()
         task = nil
         likeTask?.cancel()
